@@ -1,0 +1,9 @@
+@import url('http://www.stqn.it/nuhp_static/css/fontastic.min.css');
+
+#adminmenu .toplevel_page_qn_front_page .wp-menu-image:after {
+	content: "n";
+	font-size: 30px;
+	line-height: 0;
+	font-family: "monrif" !important;
+}
+

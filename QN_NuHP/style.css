@@ -1,0 +1,64 @@
+/*
+Theme Name: QN 2013 Nuova HP
+Theme URI: http://qn.quotidiano.net
+Description: The 2013 Quotidiano.net "NuHP" layout for WP
+Author: Ireneo Piccinini, Gabriele Mearelli, Derry Birkett
+Author URI: http://qn.quotidiano.net
+Version: 0.1
+License: Apache License 2.0
+License URI: http://www.apache.org/licenses/LICENSE-2.0
+Text Domain: qnnuhp
+*/
+
+/* Logo fix from QN NuHP */
+.logoTestata {
+	display: block;
+	margin: 20px 0;
+}
+.logoTestata a {
+	display: block;
+	margin: 0 auto;
+	width: 400px;
+	background-repeat: no-repeat;
+	background-position: 50% 50%;
+}
+.logoTestata a span {
+	display: none;
+}
+/* End Logo fix from Qn NuHP */
+
+/* Excerpts fix */
+.apertura .no-image {
+	margin-top: 150px;
+}
+.apertura .related p {
+	margin: 0 .5em;
+}
+.apertura .related p a {
+	color: #fff;
+}
+/* End Excerpts fix */
+
+/* Search archive */
+.searchTerms {
+	clear: left;
+	margin-bottom: 10px;
+	border-bottom: 1px solid #666;
+	padding: 10px;
+	background: #d9d9d9;
+	color: #222;
+}
+.searchTerms h1 { margin: 0 }
+.searchTerms h1 em {
+	padding: 2px 4px;
+	background: #ffc;
+	font-style: normal;
+}
+/* End Seach archive */
+
+/* Hide social tools if requested */
+.article .main .noshare .socialaside {
+	display: none !important;
+}
+/* End Hide social tools if requested */
+
