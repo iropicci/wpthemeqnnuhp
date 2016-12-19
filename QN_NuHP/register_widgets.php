@@ -104,11 +104,56 @@ class QNLatest_Widget extends WP_Widget {
 		extract( $args );
 		$instance = wp_parse_args( (array)$instance, $this->default_values );
 		$title = apply_filters( "widget_title", $instance["title"] );
-		$source = preg_replace( "/\W+/", "", $instance["source"] );
+		$source = preg_replace( "/[^\wàèéìòù]+/i", "", $instance["source"] );
+        $links = array(
+                        "abitare" => "%s/magazine",
+                        "animali" => "%s/animali",
+                        "auto" => "%s/motori",
+                        "basket" => "%s/sport/basket",
+                        "beauty" => "%s/moda",
+                        "caffe" => "%s/magazine",
+                        "calcio" => "%s/sport/calcio",
+                        "calciomercato" => "%s/sport/calcio",
+                        "cavallomagazine" => "http://www.cavallomagazine.it",
+                        "ciclismo" => "%s/sport/altri sport",
+                        "cinema" => "http://cinema.quotidiano.net/",
+                        "cronaca" => "%s/cronaca",
+                        "cultura" => "%s/cultura",
+                        "curiosità" => "%s/magazine",
+                        "economia" => "%s/economia",
+                        "esteri" => "%s/esteri",
+                        "finanza" => "%s/economia",
+                        "formula1" => "%s/sport/formula1",
+                        "golf" => "%s/sport/altri sport",
+                        "gossip" => "%s/magazine",
+                        "moda" => "%s/moda",
+                        "moto" => "%s/sport/motomondiale",
+                        "motomondiale" => "%s/sport/motomondiale",
+                        "motori" => "%s/sport/altri sport",
+                        "musica" => "%s/cultura",
+                        "politica" => "%s/politica",
+                        "primopiano" => "%s/",
+                        "pubbliredazionali" => "%s/pubbliredazionali",
+                        "rugby" => "%s/sport/altri sport",
+                        "sci" => "%s/sport/altri sport",
+                        "spettacoli" => "%s/spettacoli",
+                        "sport" => "%s/sport",
+                        "tecnologia" => "%s/tech",
+                        "tennis" => "%s/sport/tennis",
+                        "tv" => "http://guidatv.quotidiano.net/",
+                        "vela" => "%s/sport/altri sport",
+                        "volley" => "%s/sport/altri sport",
+                    );
+        if (!array_key_exists($source, $links)) return;
+        $link_html = $links[$source];
+        echo '<div class="notizie-automatiche">';
 		echo $before_widget;
 		if( $title ) echo $before_title . $title . $after_title;
-		include @"/www/edit_generali/news_pag/liz/news_cat_$source.shtml";
+        if( strpos( $link_html, '%s' ) !== false ) $link_html = sprintf($link_html, 'http://www.quotidiano.net');
+        $inc = sprintf('<p><a href="%s">%s</a></p>', $link_html, "Leggi altre notizie di {$title}");
+        echo $inc;
 		echo $after_widget;
+        echo '</div>';
 	}
 	public function update( $new_instance, $old_instance ) {
 		$instance = $old_instance;
@@ -132,9 +177,10 @@ class QNLatest_Widget extends WP_Widget {
 		<select class="widefat" id="<?php echo $sID; ?>" name="<?php echo $sName; ?>">
 <?php
 		$sources = array(
-			"qnet", "basket", "caffe", "calciomercato", "calcio", "ciclismo", "cinema", "conafi", "cronaca", "cultura",
-			"curiosita", "due_ruote", "economia", "esteri", "formula1", "gossip", "moda", "motomondiale",
-			"motori", "musica", "pazzo_mondo", "politica", "primo_piano", "pubbliredazionali", "rugby",
+            "abitare", "animali", "auto", "basket", "beauty", "caffe", "calcio", "calciomercato",
+            "cavallomagazine", "ciclismo", "cina", "cinema", "cronaca", "cultura", "curiosità",
+			"economia", "esteri", "finanza", "formula1", "golf", "gossip", "meteo", "moda", "moto", "motomondiale",
+			"motori", "musica", "politica", "primopiano", "pubbliredazionali", "rugby",
 			"salute", "sci", "spettacoli", "sport", "tecnologia", "tennis", "tv", "vela", "volley"
 		);
 		foreach( $sources as $source )

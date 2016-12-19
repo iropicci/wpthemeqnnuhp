@@ -27,8 +27,7 @@ wp_footer();
 
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script>window.jQuery || document.write('<script src="http://www.stqn.it/nuhp_static/js/vendor/jquery-1.10.2.min.js"><\/script>')</script>
-<!-- script src="http://www.stqn.it/nuhp_static/js/combined.min.js"></script -->
-<script src="/file_generali/disqus_test/nuhp_static/js/combined.min.js"></script>
+<script src="http://www.stqn.it/nuhp_static/js/combined.min.js"></script>
 <script>QN.init();</script>
 
 <?php qn2011_sidebar('Chiusura documento'); ?>

@@ -49,9 +49,14 @@ if ( true === false && version_compare( $wp_version, '3.4', '>=' ) ) {
 	add_custom_image_header('header_style', 'admin_header_style');
 }
 // post thumbnails
-add_theme_support('post-thumbnails', array('post'));
+add_theme_support('post-thumbnails', array('post', 'page'));
 set_post_thumbnail_size(680, 380, true);
-add_image_size('small', 30, 30, TRUE);
+add_image_size('wide_680', 680, 380, true);
+add_image_size('wide_325', 325, 182, true);
+add_image_size('wide_233', 233, 130, true);
+add_image_size('wide_154', 154, 86, true);
+add_image_size('gallery_800', 800, 800, false);
+add_image_size('small', 30, 30, true);
 
 // WIDGET
 include __DIR__ . "/admin_layout_style.php";
@@ -240,7 +245,7 @@ function qnnuhp_fonticon($icon) {
 
 // HOME PAGE LOOPS
 function parse_loops( $fpdata = FALSE ) {
-	global $qn_nuhp_modules;
+	global $qn_nuhp_modules, $wp_query;
 	$exclude = array();
 	if( ! $fpdata ) $fpdata = theme_fp_get_saved_data();
 	$loops = array();
@@ -273,6 +278,12 @@ function parse_loops( $fpdata = FALSE ) {
 			"post__not_in" => $exclude,
 			"suppress_filters" => FALSE,
 		);
+        if(is_home() && @$fpdata['pagination']['active']) {
+            $paged = (int)@$wp_query->query_vars["paged"];
+            if($paged) $args['paged'] = $paged;
+            $page = (int)@$wp_query->query_vars["page"];
+            if($page) $args['page'] = $page;
+        }
 		if($tree == 'headline') {
 			$sticky = get_option('sticky_posts', FALSE);
 			if($sticky) $args["include"] = implode(',', $sticky);
@@ -313,48 +324,58 @@ function get_the_picture($size="medium", $parent=FALSE, $ret_title=FALSE, $attrs
 		return $ret_title ? array( $picture, "" ) : $picture;
 	}
 	
+    $post_img = $img = false;
 	if( ! $parent ) {
 		if( empty( $GLOBALS["post"] ) ) return "";
 		else $parent = $GLOBALS["post"];
 	}
-	$args = array(
-		"numberposts" => 1,
-		"order" => "ASC",
-		"orderby" => "menu_order",
-		"post_type" => "attachment",
-		"post_mime_type" => "image",
-		"post_parent" => $parent->ID,
-		"post_status" => "any"
-	);
-	$picture = "";
-	$img = $title = FALSE;
-	$atts = get_posts( $args );
-	if($atts && count($atts)): foreach( $atts as $att ):
-		$img = array_shift(wp_get_attachment_image_src($att->ID, $size));
-		//echo "<pre>".print_r(get_posts("orderby=menu_order&order=ASC&post_type=attachment&post_mime_type=image&post_parent={$parent->ID}&post_status=any"),true)."</pre>\n";
-		$title = $att->post_content ? $att->post_content : $att->post_title;
-		$title = str_replace( '"', '&quot;', apply_filters( "the_title", $title ) );
-		break;
-	endforeach; else:
-		$post_img = get_the_post_thumbnail($parent->ID, $size);
-		if(!$post_img) {
-			$enclosures = @get_post_meta($parent->ID , 'the_picture', FALSE);
-			if($enclosures):
-			foreach($enclosures as $enc):
-				if(!preg_match('/\.(jpe?g|png|gif)$/i', $enc)) continue;
-				$post_img = $enc;
-				$img = $post_img;
-				break;
-			endforeach;
-			endif;
-		}
-		if(!$post_img) $post_img = $parent->post_content;
-		if( preg_match( '/<img[^>]+\bsrc="([^"]+)"[^>]*>/i', $post_img, $m ) ) {
-			$img = $m[1];
-			if(preg_match('/\b(?:alt|title)="([^"]+)/i', $m[0], $t)) $title = $t[1];
-		}
-		if(!$title) $title = str_replace( '"', '&quot;', apply_filters( "the_title", $parent->post_title ) );
+    // Provo con l'immagine in evidenza
+    if(has_post_thumbnail($parent->ID)):
+        $post_img = get_the_post_thumbnail($parent->ID, $size);
+    // Provo con l'immagine allegata
+    else:
+        $args = array(
+            "numberposts" => 1,
+            "order" => "ASC",
+            "orderby" => "menu_order",
+            "post_type" => "attachment",
+            "post_mime_type" => "image",
+            "post_parent" => $parent->ID,
+            "post_status" => "any"
+        );
+        $picture = "";
+        $img = $title = FALSE;
+        $atts = get_posts( $args );
+        if($atts && count($atts)):
+        foreach( $atts as $att ):
+            $img = array_shift(wp_get_attachment_image_src($att->ID, $size));
+            //echo "<pre>".print_r(get_posts("orderby=menu_order&order=ASC&post_type=attachment&post_mime_type=image&post_parent={$parent->ID}&post_status=any"),true)."</pre>\n";
+            $title = $att->post_content ? $att->post_content : $att->post_title;
+            $title = str_replace( '"', '&quot;', apply_filters( "the_title", $title ) );
+            break;
+        endforeach;
+        // Provo con i post meta
+        else:
+            $enclosures = @get_post_meta($parent->ID , 'the_picture', FALSE);
+            if($enclosures):
+            foreach($enclosures as $enc):
+                if(!preg_match('/\.(jpe?g|png|gif)$/i', $enc)) continue;
+                $post_img = $enc;
+                $img = $post_img;
+                break;
+            endforeach;
+            endif;
+            // Provo con il contenuto articolo
+            if(!$post_img) $post_img = $parent->post_content;
+        endif;
 	endif;
+    if($post_img) {
+        if( preg_match( '/<img[^>]+\bsrc="([^"]+)"[^>]*>/i', $post_img, $m ) ) {
+            $img = $m[1];
+            if(preg_match('/\b(?:alt|title)="([^"]+)/i', $m[0], $t)) $title = $t[1];
+        }
+    }
+    if(!$title) $title = str_replace( '"', '&quot;', apply_filters( "the_title", $parent->post_title ) );
 	if( $img && $title ) {
 		$post_pictures[ $parent->ID ] = $img;
 		$attrs['src'] = $img;

@@ -23,6 +23,7 @@ $post_index = 0;
 
 if(count($loops['headline'])) {
 	echo '<div class="row apertura">';
+    $post_index += count(array_filter($loops["headline"]));
 	display_posts($loops["headline"], "headline");
 	echo '</div><div class="row notizie-altre staccati"></div>';
 	echo '<div class="row"><div class="block1">';
@@ -37,9 +38,24 @@ $modules_options = get_option('qnnuhp_modules_options');
 
 if(!empty($areas_modules['home-articles'])):
 foreach($areas_modules['home-articles'] as $mod_id):
+    $post_index += count(array_filter($loops[$mod_id]));
 	display_posts($loops[$mod_id], qn_get_nuhp_module_from_widget($mod_id), @$modules_options[$mod_id]);
 endforeach;
 endif;
+
+if($post_index) {
+	qn_navigate_pagination(TRUE);
+} else {
+	echo "<p>Nessun articolo da mostrare.</p>
+        <ul class=\"pagination\">
+            <li class=\"prev\">
+                <a href=\"" . get_bloginfo('home') . "\"><i class=\"icon-angle-left\"></i></a>
+                Pagina iniziale
+            </li>
+            <li class=\"next\"></li>
+        </ul>
+        \n";
+}
 
 echo "\t<div class=\"row\">\n";
 qn2011_sidebar('Articles Bottom Home Widgets');

@@ -6,8 +6,6 @@
 <div class="row">
 <div class="main">
 
-<?php qn2011_sidebar('Archive Widgets'); ?>
-
 <!-- briciole di pane -->
 <?php if(is_single()) { ?>
 <div class="row">

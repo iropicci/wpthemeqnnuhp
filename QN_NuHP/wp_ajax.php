@@ -11,6 +11,7 @@ $qn_nuhp_modules = array(
 			'mod_editorial',
 			'mod_news',
 			'mod_newssmall',
+            'mod_newsedition',
 		),
 	'home-main-column' => array(
 			'mod_quadbox',
@@ -25,6 +26,7 @@ $qn_nuhp_modules_desc = array(
 	'mod_editorial' => array('title' => 'Editoriali', 'desc' => 'Link ad editoriali e blog'),
 	'mod_news' => array('title' => 'Ultime notizie', 'desc' => 'Flusso ultime notizie'),
 	'mod_newssmall' => array('title' => 'Notizie mignon', 'desc' => 'Flusso notizie formato piccolo'),
+	'mod_newsedition' => array('title' => 'Notizie edizione', 'desc' => 'Flusso ultime notizie (una per riga)'),
 	'mod_quadbox' => array('title' => 'Box quadrupli', 'desc' => 'Quattro notizie mostrate in riga'),
 	'mod_catview' => array('title' => 'Sezione categoria', 'desc' => 'Box con ultime notizie da singola categoria'),
 	'mod_mosaic' => array('title' => 'Mosaico foto', 'desc' => 'Composizione ultime notizie con foto'),
@@ -90,9 +92,19 @@ function qn_ajax_widgets_order() {
 function qn_set_areas_modules($areas) {
 	$option_name = 'qnnuhp_areas_modules';
 	$oldareas = get_option($option_name);
-	if($oldareas === FALSE) return add_option($option_name, $areas);
-	if($oldareas === $areas) return TRUE;
-	return update_option($option_name, $areas);
+    $newareas = array();
+    foreach($areas as $spot => $area) {
+        $newareas[$spot] = array();
+        foreach($area as $module) {
+            if(preg_match('/\d+$/', $module, $multi_string)) {
+                if((int)$multi_string[0] >= 9000) continue;
+            }
+            $newareas[$spot][] = $module;
+        }
+    }
+	if($oldareas === FALSE) return add_option($option_name, $newareas);
+	if($oldareas === $newareas) return TRUE;
+	return update_option($option_name, $newareas);
 }
 
 add_action('wp_ajax_save-widget', 'qn_ajax_save_widget', 0);
@@ -108,6 +120,7 @@ function qn_ajax_save_widget() {
 		$sidebar_id = $_POST['sidebar'];
 		$area_id = qn_get_nuhp_area_from_sidebar($sidebar_id);
 		$multi_number = !empty($_POST['multi_number']) ? (int)$_POST['multi_number'] : 0;
+        if($multi_number >= 9000) wp_die("<p><strong>Error:</strong> This module cannot be manually edited. Sorry bro.</p>");
 		$settings = isset($_POST['widget-' . $id_base]) && is_array($_POST['widget-' . $id_base]) ? $_POST['widget-' . $id_base] : false;
 		$errors = array(
 			1 => __('The module doesn\'t belong to the selected area.'),

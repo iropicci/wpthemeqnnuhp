@@ -54,7 +54,6 @@ if(is_search()) {
 		Risultati trovati: <strong>$found_posts</strong>, visualizzati da $s_start a $s_end
 	</div>";
 }
-qn2011_sidebar('Archive Widgets');
 qn2011_sidebar('Articles Top Widgets');
 
 if(have_posts()) {

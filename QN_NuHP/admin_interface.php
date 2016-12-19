@@ -63,11 +63,12 @@ function qn_slash_option( &$value, $key = FALSE, $typecheck = FALSE ) {
 }
 
 function qn_get_option( $optname ) {
-    $value = @get_option( $optname );
+    $value = @get_option( $optname, FALSE );
+    if($value === FALSE) return $value;
     $serial = @unserialize( $value );
     if( $serial !== FALSE ) $value = $serial;
     if( is_array( $value ) ) array_walk( $value, "qn_slash_option" );
-    elseif( is_string( $value ) ) qn_slash_option( $value );
+    elseif( is_string( $value ) ) qn_slash_option( $value, FALSE );
     return $value;
 }
 
@@ -135,6 +136,13 @@ function theme_fp_defaultdata() {
             "cats" => array( "array|int", 0 ),
             "exclude" => array( "array|int", 0 ),
         ),
+        "mod_newsedition" => array(
+            "count" => array("int", 8),
+            "icon" => array("string", ""),
+            "title" => array("string", ""),
+            "cats" => array("array|int", 0),
+            "exclude" => array("array|int", 0),
+        ),
         "mod_quadbox" => array(
             "count" => array( "int", 4 ),
             "cats" => array( "array|int", 0 ),
@@ -189,15 +197,19 @@ function theme_save_front_page_settings() {
     $data = theme_fp_get_saved_data();
     if( @$_POST["update_settings"] !== "SI" ) return $data;
     $changedinfo = array( "new" => array(), "done" => array(), "nope" => array(), "errors" => array() );
+    $deleteallprevious = @$_POST["qnoptsdeleteandrefresh"] === "SI";
     $errs = array();
     foreach( $data as $tree => &$opts ) {
         foreach( $opts as $opt => &$value ) {
             $newvalue = isset( $_POST[$tree][$opt] ) ? $_POST[$tree][$opt] : $defdata[$tree][$opt][1];
-            if( is_array( $newvalue ) ) array_walk($newvalue, "qn_slash_option", TRUE);
-            elseif( is_string( $newvalue ) ) qn_slash_option($newvalue, FALSE, TRUE);
+            if( is_array( $newvalue ) ) array_walk($newvalue, "qn_slash_option");
+            elseif( is_string( $newvalue ) ) qn_slash_option($newvalue, FALSE);
             $updkey = theme_fp_option( $tree, $opt );
             $updvalue = qn_default_value( $newvalue, $defdata[$tree][$opt][0], $defdata[$tree][$opt][1] );
             $oldvalue = qn_get_option( $updkey );
+            if($deleteallprevious && $oldvalue !== FALSE && delete_option($updkey)) {
+                $oldvalue = FALSE;
+            }
             //echo "<p>Updating $tree/$opt from ";var_dump($oldvalue);echo" to ";var_dump($updvalue);echo "...</p>\n";
             if( $oldvalue === FALSE ) {
                 $value = $updvalue;
@@ -300,6 +312,7 @@ function qn_module_widget($widget_base, $multi_number, $settings = array()) {
     $modules_desc = $GLOBALS['qn_nuhp_modules_desc'];
     $module_desc = (array)@$modules_desc[qn_get_nuhp_module_from_widget($widget_base)];
     $is_multi = $multi_number == '__i__' || is_int($multi_number) && $multi_number > 0;
+    $is_pluginwidget = is_int($multi_number) && $multi_number >= 9000;
     $multi_string = $is_multi ? '__i__' : '';
     if(count($settings) > 0) $multi_string = $multi_number;
     echo '<div id="widget-'.$widget_base.'-'.$multi_string.'" class="widget'.($is_multi ? ' ui-draggable" style="width:99%' : '').'">
@@ -310,17 +323,22 @@ function qn_module_widget($widget_base, $multi_number, $settings = array()) {
                     <div class="widget-title">
                         <h4>
                             '.@$module_desc['title'].'
+                            '.($is_pluginwidget ? ' <small>[READONLY]</small>' : '').'
                             <span class="in-widget-title"></span>
                         </h4>
                     </div>
                 </div>
                 <div class="widget-inside">
                     <form method="post" action="">';
-    $mod_name = qn_get_nuhp_module_from_widget($widget_base);
-    $area_name = qn_get_nuhp_area_for_module($mod_name);
-    qn_module_inner_form($mod_name, "widget-{$widget_base}[{$multi_string}]", $settings);
-    $widget_number = $is_multi ? (is_int($multi_number) && $multi_number > 2 ? $multi_number - 1 : '-1') : '';
-    echo '				<input class="widget-id" name="widget-id" type="hidden" value="'.$widget_base.'-'.$multi_string.'" />
+    if($is_pluginwidget) {
+        // this is an automatically inserted widget! no touching!
+        echo '<p><span class="description">Questo modulo è stato inserito tramite plugin!</span></p>';
+    } else {
+        $mod_name = qn_get_nuhp_module_from_widget($widget_base);
+        $area_name = qn_get_nuhp_area_for_module($mod_name);
+        qn_module_inner_form($mod_name, "widget-{$widget_base}[{$multi_string}]", $settings);
+        $widget_number = $is_multi ? (is_int($multi_number) && $multi_number > 2 ? $multi_number - 1 : '-1') : '';
+        echo '			<input class="widget-id" name="widget-id" type="hidden" value="'.$widget_base.'-'.$multi_string.'" />
                         <input class="id_base" name="id_base" type="hidden" value="'.$widget_base.'" />
                         <input class="widget-width" name="widget-width" type="hidden" value="400" />
                         <input class="widget-height" name="widget-height" type="hidden" value="350" />
@@ -339,7 +357,9 @@ function qn_module_widget($widget_base, $multi_number, $settings = array()) {
                                 <span class="spinner"></span>
                             </div>
                             <br style="clear:right" />
-                        </div>
+                        </div>';
+    }
+    echo '
                     </form>
                 </div>
                 <div class="widget-description">'.@$module_desc['desc'].'</div>
@@ -366,13 +386,14 @@ function cat_select( $name, $id = FALSE, $selected = "", $multi = 6, $print = TR
     } else {
         $opt0 = "\t<option value=\"\">Seleziona</option>\n";
     }
+    $what = array();
     printf( "<select name=\"%s\" id=\"%s\"%s>\n%s", $name, $id, $multiple, $opt0 );
     foreach( $cats as $cat ) {
         $sel = (
             (array)$selected[0] && (
-                in_array( $cat->cat_ID, (array)$selected ) ||
-                in_array( $cat->category_nicename, (array)$selected ) ||
-                in_array( $cat->cat_name, (array)$selected )
+                in_array( $cat->cat_ID, (array)$selected, true ) ||
+                in_array( $cat->category_nicename, (array)$selected, true ) ||
+                in_array( $cat->cat_name, (array)$selected, true )
             )
         ) ? ' selected="selected"' : '';
         $opt_id = $id . "-" . $cat->cat_ID;
@@ -579,6 +600,13 @@ function theme_front_page_settings() {
                     </td>
                 </tr>
             </table>
+            <p><a onclick="document.getElementById('qnadvancedopts').style.display='block'">Mostra impostazioni avanzate (sviluppatore)</a></p>
+            <div id="qnadvancedopts" style="display:none">
+                <p class="description">
+                    <input type="checkbox" value="SI" name="qnoptsdeleteandrefresh" id="qnoptsdeleteandrefresh" />
+                    <label for="qnoptsdeleteandrefresh"><strong>RISCHIO:</strong> forza aggiornamento di tutte le impostazioni</label>
+                </p>
+            </div>
             <p><input type="submit" value="Registra modifiche" class="button-primary" /></p>
         </form>
 <?php
@@ -606,7 +634,9 @@ function theme_front_page_settings() {
                                         if(!preg_match('/^([\w-]+)-(\d+)$/', $area_module, $m)) continue;
                                         list(,$m_widget_base, $m_multi_number) = $m;
                                         if($m_widget_base != $widget_base) continue;
-                                        $multi_number = max($multi_number, (int)$m_multi_number);
+                                        $i_multi_number = (int)$m_multi_number;
+                                        if($i_multi_number >= 9000) $i_multi_number = 1;
+                                        $multi_number = max($multi_number, $i_multi_number);
                                     }
                                     endif;
                                     qn_module_widget($widget_base, $multi_number + 1);
